@@ -759,6 +759,12 @@ main { padding:28px 36px 64px; max-width:1220px; margin:0 auto; }
 .pe-table thead tr { background:linear-gradient(90deg, var(--brand-dk) 0%, var(--brand) 100%); }
 .pe-table th { font-size:9px; color:rgba(255,255,255,0.80); text-transform:uppercase; letter-spacing:0.08em; padding:10px 12px; text-align:left; font-weight:700; }
 .pe-epic-row { cursor:pointer; transition:background .1s; border-bottom:1px solid var(--border); }
+.pe-epic-row.dragging { opacity:.4; }
+.pe-epic-row.drag-over { box-shadow:0 -3px 0 0 var(--brand); }
+.pe-drag-handle { display:flex; align-items:center; justify-content:center; width:16px; height:16px; color:var(--text3); cursor:grab; flex-shrink:0; }
+.pe-drag-handle:hover { color:var(--brand); }
+.pe-drag-handle svg { width:14px; height:14px; }
+.pe-epic-row.dragging .pe-drag-handle { cursor:grabbing; }
 .pe-epic-row:hover { background:var(--surface2); }
 .pe-epic-row td { padding:11px 12px; vertical-align:middle; }
 .pe-epic-name { font-size:13px; font-weight:600; color:var(--text); }
@@ -987,7 +993,8 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
   <div class="pin-gate-box">
     <div class="pin-gate-logo">FTD DCM</div>
     <div class="pin-gate-title">Acesso restrito</div>
-    <div class="pin-gate-sub">Digite o PIN de acesso para continuar</div>
+    <div class="pin-gate-sub">Digite seu e-mail e o PIN de acesso para continuar</div>
+    <input type="email" id="pin-gate-email" class="pin-gate-input" placeholder="E-mail de usuário" autocomplete="off" style="text-align:left;letter-spacing:normal;margin-bottom:10px;" />
     <input type="password" id="pin-gate-input" class="pin-gate-input" placeholder="PIN de acesso" autocomplete="off" />
     <button type="button" id="pin-gate-btn" class="pin-gate-btn" onclick="submitPin()">Entrar</button>
     <div id="pin-gate-error" class="pin-gate-error"></div>
@@ -1019,6 +1026,12 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
   </a>
   <span class="header-meta" id="updated-date"></span>
 </header>
+
+<!-- ══ AVISO DE MODO SOMENTE LEITURA — visível só para usuários com papel
+     'viewer'; ver applyReadOnlyMode() ══ -->
+<div id="read-only-banner" class="pdf-exclude" style="display:none;background:var(--gold);color:#3B2E00;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:.02em;">
+  👁 Modo somente leitura — você está visualizando este relatório sem permissão de edição.
+</div>
 
 <!-- ══ TABS ══ -->
 <nav class="tabs-bar">
@@ -1583,7 +1596,7 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
     </div>
     <div class="pe-table-wrap">
       <table class="pe-table">
-        <thead><tr><th style="width:36px;"></th><th style="width:36px;">#</th><th style="width:100px;">Selo</th><th>Título</th><th style="width:52px;">Tipo</th><th style="width:88px;">Início</th><th style="width:88px;">Fim</th><th style="width:150px;">Status</th><th>Comentário</th><th style="width:28px;"></th></tr></thead>
+        <thead><tr><th style="width:24px;"></th><th style="width:36px;"></th><th style="width:36px;">#</th><th style="width:100px;">Selo</th><th>Título</th><th style="width:52px;">Tipo</th><th style="width:88px;">Início</th><th style="width:88px;">Fim</th><th style="width:150px;">Status</th><th>Comentário</th><th style="width:28px;"></th></tr></thead>
         <tbody id="pe-tbody"></tbody>
       </table>
     </div>
@@ -1716,7 +1729,6 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
 const _NS = 'ftd_dcm_v1::';
 const SUPABASE_URL = 'https://famgcarcygejxdwlbcam.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWdjYXJjeWdlanhkd2xiY2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NTYyMzcsImV4cCI6MjEwMzIzMjIzN30.9q4M0mz9sm3pYTgT4iWVGn57wXW3_a-oeMP4Ohh2ZHY';
-const PIN_LOGIN_EMAIL = 'ftd.team@vilt-group.com';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let _kvCache = {};
@@ -3253,9 +3265,12 @@ const PE_TITLE_OVERRIDES_DEFAULT={"19":"CTPM","20":"SIM EFAI - Ren Dig Matriz Ar
 let peTitleOverrides = JSON.parse(JSON.stringify(PE_TITLE_OVERRIDES_DEFAULT));
 /* mesma lógica para a etiqueta DIG/IMP das coleções fixas */
 let peTipoOverrides = {};
+/* mesma lógica para o selo das coleções fixas */
+let peSeloOverrides = {};
 function applyPeOverrides() {
   PE_COLS.forEach(col => { if (peTitleOverrides[col.n] !== undefined) col.title = peTitleOverrides[col.n]; });
   PE_COLS.forEach(col => { if (peTipoOverrides[col.n] !== undefined) col.tipo = peTipoOverrides[col.n]; });
+  PE_COLS.forEach(col => { if (peSeloOverrides[col.n] !== undefined) col.selo = peSeloOverrides[col.n]; });
 }
 function addPeCollection() {
   const n = PE_COLS.length + PE_COLS_STATE.length + 1;
@@ -3274,6 +3289,11 @@ const peRowExp = {};
 /* filtro por selo — valor '' mostra todas as coleções; não é persistido,
    é apenas uma preferência de visualização da sessão atual. */
 let peSeloFilter = '';
+/* ordem de exibição das coleções (arrastar-e-soltar), lista de col.n na
+   ordem desejada — null/vazia usa a ordem natural (fixas depois
+   customizadas). Persistida no código como as demais edições. */
+let peOrder = null;
+let draggedPeColN = null;
 function populatePeSeloFilter(allCols) {
   const sel = document.getElementById('pe-selo-filter-sel');
   if (!sel) return;
@@ -3297,22 +3317,91 @@ function buildPE(){
   buildPeKpis();
   populatePeSeloFilter(_allCols);
   const tbody=document.getElementById('pe-tbody');tbody.innerHTML='';
-  _allCols.forEach((col,ei)=>{
+  /* ordem de exibição — aplica peOrder (arrastar-e-soltar) por cima da ordem
+     natural (fixas seguidas de customizadas). Isso NÃO reordena _allCols
+     nem peState de verdade — só a sequência em que renderizamos; ei
+     continua sendo o índice real usado por peState em todo o resto do
+     código, evitando qualquer risco de desalinhar tarefas com coleções. */
+  const naturalIdx=_allCols.map((_,i)=>i);
+  let displayOrder=naturalIdx;
+  if(peOrder && peOrder.length){
+    const posByN=new Map(peOrder.map((n,idx)=>[n,idx]));
+    displayOrder=[...naturalIdx].sort((a,b)=>{
+      const pa=posByN.has(_allCols[a].n)?posByN.get(_allCols[a].n):Infinity;
+      const pb=posByN.has(_allCols[b].n)?posByN.get(_allCols[b].n):Infinity;
+      return pa!==pb ? pa-pb : a-b;
+    });
+  }
+  displayOrder.forEach((ei,displayPos)=>{
+    const col=_allCols[ei];
     if (peSeloFilter && col.selo !== peSeloFilter) return; /* fora do filtro por selo — não renderiza, mas preserva o índice ei para peState */
     const isOpen = peRowExp[col.n] !== false; /* aberto por padrão */
     /* determine if custom (user-added) collection */
     const isCustom = !!col.custom;
     const etr=document.createElement('tr');etr.className='pe-epic-row'+(isOpen?' open':'');
+    /* arrastar para reordenar — opera sobre peOrder (col.n), não sobre
+       _allCols/peState diretamente; ao soltar, refaz buildPE() por inteiro,
+       que já resolve reposicionar a coleção e todas as suas tarefas juntas. */
+    const tddrag=document.createElement('td');
+    const dragH=document.createElement('span');dragH.className='pe-drag-handle';dragH.title='Arraste para reordenar';
+    dragH.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.3"/><circle cx="11" cy="3" r="1.3"/><circle cx="5" cy="8" r="1.3"/><circle cx="11" cy="8" r="1.3"/><circle cx="5" cy="13" r="1.3"/><circle cx="11" cy="13" r="1.3"/></svg>';
+    dragH.addEventListener('click',e=>e.stopPropagation());
+    tddrag.appendChild(dragH);
+    etr.draggable=true;
+    etr.addEventListener('dragstart',e=>{
+      draggedPeColN=col.n;
+      etr.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      try{ e.dataTransfer.setData('text/plain',''); }catch(err){}
+    });
+    etr.addEventListener('dragend',()=>{
+      etr.classList.remove('dragging');
+      draggedPeColN=null;
+      tbody.querySelectorAll('.pe-epic-row.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    });
+    etr.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(draggedPeColN!==null && draggedPeColN!==col.n){
+        e.dataTransfer.dropEffect='move';
+        etr.classList.add('drag-over');
+      }
+    });
+    etr.addEventListener('dragleave',()=>etr.classList.remove('drag-over'));
+    etr.addEventListener('drop',e=>{
+      e.preventDefault();
+      etr.classList.remove('drag-over');
+      if(draggedPeColN===null || draggedPeColN===col.n) return;
+      let order=(peOrder && peOrder.length)?[...peOrder]:displayOrder.map(i=>_allCols[i].n);
+      _allCols.forEach(c=>{ if(!order.includes(c.n)) order.push(c.n); });
+      const fromIdx=order.indexOf(draggedPeColN), toIdx=order.indexOf(col.n);
+      if(fromIdx<0||toIdx<0) return;
+      order.splice(fromIdx,1);
+      order.splice(toIdx,0,draggedPeColN);
+      peOrder=order;
+      ST.set('pe_collection_order',peOrder);
+      buildPE();
+    });
     /* expand btn */
     const tdex=document.createElement('td');const exBtn=document.createElement('div');exBtn.className='pe-expand-btn';exBtn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke="currentColor"><polyline points="4,6 8,10 12,6"/></svg>`;tdex.appendChild(exBtn);
-    /* number */
-    const tdn=document.createElement('td');tdn.textContent=ei+1;tdn.style.cssText='font-size:12px;color:var(--text3);';
-    /* selo — editable for custom, static for built-in */
+    /* number — reflete a posição de EXIBIÇÃO (muda ao reordenar), não o
+       índice real de dados (ei) */
+    const tdn=document.createElement('td');tdn.textContent=displayPos+1;tdn.style.cssText='font-size:12px;color:var(--text3);';
+    /* selo — editável e salvo para TODAS as coleções (fixas e customizadas),
+       mesmo padrão do título: fixas usam um override à parte, pois o array
+       PE_COLS original não pode ser alterado permanentemente. */
     const tds=document.createElement('td');
-    if(isCustom){
-      const seloInp=document.createElement('input');seloInp.className='pe-col-selo-inp';seloInp.value=col.selo;seloInp.placeholder='Selo';
-      seloInp.addEventListener('change',e=>{col.selo=e.target.value;ST.set('pe_cols_extra',PE_COLS_STATE);});seloInp.addEventListener('click',e=>e.stopPropagation());tds.appendChild(seloInp);
-    } else { tds.textContent=col.selo; tds.style.cssText='font-size:12px;color:var(--text2);'; }
+    const seloInp=document.createElement('input');seloInp.className='pe-col-selo-inp';seloInp.value=col.selo;seloInp.placeholder='Selo';
+    seloInp.addEventListener('click',e=>e.stopPropagation());
+    seloInp.addEventListener('change',e=>{
+      col.selo=e.target.value;
+      if(isCustom){
+        ST.set('pe_cols_extra',PE_COLS_STATE);
+      } else {
+        peSeloOverrides[col.n]=e.target.value;
+        ST.set('pe_col_selo_overrides',peSeloOverrides);
+      }
+    });
+    tds.appendChild(seloInp);
     /* título — editável e salvo para TODAS as coleções (fixas e customizadas) */
     const tdt=document.createElement('td');tdt.className='pe-epic-name';
     const titleInp=document.createElement('input');titleInp.className='pe-col-title-inp';titleInp.value=col.title;titleInp.placeholder='Título da coleção';
@@ -3376,7 +3465,7 @@ function buildPE(){
       buildPE();
     });
     tddl.appendChild(delColBtn);
-    etr.append(tdex,tdn,tds,tdt,tdtp,tdeds,tdede,tdst,tdcm,tddl);
+    etr.append(tddrag,tdex,tdn,tds,tdt,tdtp,tdeds,tdede,tdst,tdcm,tddl);
     etr.addEventListener('click',e=>{
       if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'||e.target.tagName==='SELECT') return;
       const open=etr.classList.toggle('open');
@@ -3386,6 +3475,8 @@ function buildPE(){
     tbody.appendChild(etr);
     function mkPeTask(task,ti){
       const tr=document.createElement('tr');tr.className='pe-task-row'+(isOpen?' vis':'');tr.setAttribute('data-pep',ei);
+      /* drag placeholder */
+      const tdrg=document.createElement('td');
       /* expand placeholder */
       const te=document.createElement('td');
       /* num */
@@ -3416,16 +3507,16 @@ function buildPE(){
       /* delete */
       const tdel=document.createElement('td');const db=document.createElement('button');db.className='del-btn';db.textContent='×';
       db.addEventListener('click',e=>{e.stopPropagation();peState[ei].splice(ti,1);buildPE();});tdel.appendChild(db);
-      tr.append(te,tn,ts2,ttk,ttyp,tds,tde,tst,tcm,tdel);return tr;
+      tr.append(tdrg,te,tn,ts2,ttk,ttyp,tds,tde,tst,tcm,tdel);return tr;
     }
     peState[ei].forEach((task,ti)=>tbody.appendChild(mkPeTask(task,ti)));
     const addTr=document.createElement('tr');addTr.className='pe-add-row'+(isOpen?' vis':'');addTr.setAttribute('data-pep',ei);
-    const addTd=document.createElement('td');addTd.setAttribute('colspan','10');addTd.className='pe-add-cell';
+    const addTd=document.createElement('td');addTd.setAttribute('colspan','11');addTd.className='pe-add-cell';
     const addBtn=document.createElement('button');addBtn.className='btn-add-pe';addBtn.innerHTML=`<svg viewBox="0 0 16 16"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>Adicionar tarefa`;
     addBtn.addEventListener('click',e=>{e.stopPropagation();peState[ei].push({name:'Nova tarefa',status:'pendente',dateStart:'',dateEnd:'',comment:''});buildPE();});
     addTd.appendChild(addBtn);addTr.appendChild(addTd);tbody.appendChild(addTr);
     const saveTr=document.createElement('tr');saveTr.className='pe-save-row'+(isOpen?' vis':'');saveTr.setAttribute('data-pep',ei);
-    const saveTd=document.createElement('td');saveTd.setAttribute('colspan','10');saveTd.className='pe-save-cell';
+    const saveTd=document.createElement('td');saveTd.setAttribute('colspan','11');saveTd.className='pe-save-cell';
     const saveInner=document.createElement('div');saveInner.className='pe-save-inner';
     const sn=document.createElement('span');sn.className='saved-note';sn.id=`pe-saved-${ei}`;sn.textContent='✓ Salvo';
     const sb=document.createElement('button');sb.className='btn-save-epic';sb.textContent='Salvar';
@@ -4225,6 +4316,7 @@ function switchTab(tab){
   if(tab==='board')     buildBoard();
   if(tab==='roadmap')   buildRoadmapTab();
   if(tab==='backlog')   buildBacklogTable();
+  applyReadOnlyMode();
 }
 
 /* ═══ DASH HEADER FUNCTIONS ═══ */
@@ -4340,6 +4432,8 @@ function bootApp() {
   PE_COLS_DELETED = ST.get('pe_cols_deleted', null) || JSON.parse(JSON.stringify(PE_COLS_DELETED_DEFAULT));
   peTitleOverrides = ST.get('pe_col_title_overrides', null) || JSON.parse(JSON.stringify(PE_TITLE_OVERRIDES_DEFAULT));
   peTipoOverrides = ST.get('pe_col_tipo_overrides', {});
+  peSeloOverrides = ST.get('pe_col_selo_overrides', {});
+  peOrder = ST.get('pe_collection_order', null);
   applyPeOverrides();
   RM_PILLARS = ST.get('roadmap_pillars', null) || JSON.parse(JSON.stringify(RM_PILLARS_DEFAULT));
   sortRmPillars();
@@ -4364,30 +4458,69 @@ function bootApp() {
   sizeDashTextBlocks();
   restoreSeTextBlocks();
   sizeSeTextBlocks();
+  applyReadOnlyMode();
 }
 
 /* ═══ PIN GATE — autenticação compartilhada via Supabase Auth ═══ */
+/* ═══ CONTROLE DE ACESSO — editor vs. visualizador ═══
+   'editor' pode gravar (a política de RLS do kv_store no Supabase também
+   exige isso, então mesmo contornando a interface a gravação seria
+   recusada pelo banco). 'viewer' é o padrão "seguro" — se a consulta ao
+   papel falhar por qualquer motivo, a pessoa cai como somente leitura,
+   nunca como editora. */
+let currentUserRole = 'viewer';
+async function loadUserRole() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) { currentUserRole = 'viewer'; return; }
+  const { data, error } = await sb.from('user_roles').select('role').eq('user_id', user.id).single();
+  currentUserRole = (!error && data && data.role === 'editor') ? 'editor' : 'viewer';
+}
+/* ids de controles que NÃO mexem em dados (filtros, navegação) — continuam
+   liberados mesmo em modo somente leitura. */
+const READ_ONLY_ALLOWED_IDS = ['pe-selo-filter-sel', 'bkl-filter-priority', 'bkl-filter-frente'];
+function applyReadOnlyMode() {
+  const banner = document.getElementById('read-only-banner');
+  if (currentUserRole === 'editor') { if (banner) banner.style.display = 'none'; return; }
+  if (banner) banner.style.display = 'block';
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    if (READ_ONLY_ALLOWED_IDS.includes(el.id)) return;
+    el.disabled = true;
+  });
+  document.querySelectorAll('button').forEach(btn => {
+    if (btn.classList.contains('tab-btn')) return;
+    if (btn.classList.contains('btn-download-pdf-outer')) return;
+    if (btn.classList.contains('btn-squad-toggle')) return;
+    btn.disabled = true;
+    btn.style.opacity = '0.45';
+    btn.style.cursor = 'not-allowed';
+  });
+}
+
 async function showAppAfterAuth() {
   document.getElementById('pin-gate-loading').style.display = 'block';
   await loadKvStore();
+  await loadUserRole();
   document.getElementById('pin-gate').style.display = 'none';
   bootApp();
 }
 
 async function submitPin() {
+  const emailInput = document.getElementById('pin-gate-email');
   const input = document.getElementById('pin-gate-input');
   const errEl = document.getElementById('pin-gate-error');
   const btn = document.getElementById('pin-gate-btn');
   errEl.textContent = '';
+  const email = emailInput.value.trim();
   const pin = input.value;
+  if (!email) { errEl.textContent = 'Digite o e-mail de usuário.'; return; }
   if (!pin) { errEl.textContent = 'Digite o PIN.'; return; }
   btn.disabled = true;
   btn.textContent = 'Verificando...';
-  const { error } = await sb.auth.signInWithPassword({ email: PIN_LOGIN_EMAIL, password: pin });
+  const { error } = await sb.auth.signInWithPassword({ email, password: pin });
   btn.disabled = false;
   btn.textContent = 'Entrar';
   if (error) {
-    errEl.textContent = 'PIN incorreto. Tente novamente.';
+    errEl.textContent = 'E-mail ou PIN incorreto. Tente novamente.';
     input.value = '';
     input.focus();
     return;
@@ -4395,7 +4528,9 @@ async function submitPin() {
   await showAppAfterAuth();
 }
 
-document.getElementById('pin-gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
+['pin-gate-email', 'pin-gate-input'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
+});
 
 (async function initAuthGate() {
   const { data: { session } } = await sb.auth.getSession();
