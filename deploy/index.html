@@ -3941,13 +3941,14 @@ sortRmPillars();
 /* dados recuperados do armazenamento anterior — mantidos como padrão fixo para
    não se perderem novamente em mudanças de layout, cópia do arquivo, etc. */
 const RM_MILESTONES_DEFAULT=[
-  {name:'Discoveries FTD-SE',                             date:'2026-08-31', color:'#FF5C6E', pillarId:'disc', status:'em andamento'},
-  {name:'Discoveries Bilinguismo',                         date:'2026-08-31', color:'#7C3AED', pillarId:'disc', status:'em andamento'},
-  {name:'Discoveries SIM',                                 date:'2026-09-25', color:'#1449C7', pillarId:'disc'},
-  {name:'Discoveries Saber Mais',                          date:'2026-09-25', color:'#12A150', pillarId:'disc'},
-  {name:'Discovery Didáticos',                             date:'2026-10-30', color:'#DB8B0B', pillarId:'disc'},
-  {name:'Discovery Suplementares',                         date:'2026-11-27', color:'#1AA6B8', pillarId:'disc'},
-  {name:'Discovery Literatura',                            date:'2026-11-27', color:'#E11761', pillarId:'disc'},
+  {name:'Discovery FTD-SE',                                date:'2026-08-31', color:'#FF5C6E', pillarId:'disc', status:'em andamento'},
+  {name:'Discovery SIM',                                   date:'2026-10-02', color:'#7C3AED', pillarId:'disc', status:'em andamento'},
+  {name:'Discovery Bilinguismo',                           date:'2026-08-31', color:'#1449C7', pillarId:'disc', status:'em andamento'},
+  {name:'Discovery Didáticos',                             date:'2026-10-30', color:'#12A150', pillarId:'disc', status:'em andamento'},
+  {name:'Discovery SME',                                   date:'2026-11-27', color:'#DB8B0B', pillarId:'disc', status:'em andamento'},
+  {name:'Discovery Literatura',                            date:'2026-10-30', color:'#1AA6B8', pillarId:'disc', status:'pendente'},
+  {name:'Discovery Suplementares',                         date:'2026-11-27', color:'#E11761', pillarId:'disc', status:'pendente'},
+  {name:'Discovery PNLD',                                  date:'2027-01-08', color:'#9BA3CC', pillarId:'disc', status:'pendente'},
   {name:'Embarque FTD-SE',                                 date:'2026-10-19', color:'#FF5C6E', pillarId:'emb', status:'em andamento'},
   {name:'Embarque SIM',                                    date:'2026-11-16', color:'#7C3AED', pillarId:'emb', status:'em andamento'},
   {name:'Embarque Bilinguismo',                            date:'2026-11-02', color:'#1449C7', pillarId:'emb', status:'em andamento'},
@@ -4023,14 +4024,27 @@ function buildRoadmapChart(){
       const empty=document.createElement('div'); empty.className='rm-gantt-empty'; empty.textContent='Em planejamento – datas a definir';
       trackWrap.appendChild(empty);
     }
-    /* milestones desta lane (pilar) */
+    /* milestones desta lane (pilar) — agrupados por data exata: quando mais
+       de um cai no mesmo dia, os losangos ficariam exatamente sobrepostos
+       (um escondendo o outro); aqui deslocamos verticalmente cada um do
+       grupo para que todos fiquem visíveis lado a lado. */
+    const msByDate={};
     RM_MILESTONES.filter(ms=>ms.pillarId===p.id).forEach(ms=>{
-      const f=rmDateFrac(ms.date);
-      if(f===null) return;
-      const marker=document.createElement('div'); marker.className='rm-lane-mstone';
-      marker.style.left=rmPct(f); marker.style.background=rmMsStatusColor(ms.status);
-      marker.title=`${ms.name||'Milestone'} — ${fmtDate(ms.date)} — ${rmMsStatusLabel(ms.status)}`;
-      trackWrap.appendChild(marker);
+      if(rmDateFrac(ms.date)===null) return;
+      (msByDate[ms.date]=msByDate[ms.date]||[]).push(ms);
+    });
+    Object.keys(msByDate).forEach(dateKey=>{
+      const group=msByDate[dateKey], f=rmDateFrac(dateKey);
+      group.forEach((ms,gi)=>{
+        const marker=document.createElement('div'); marker.className='rm-lane-mstone';
+        marker.style.left=rmPct(f); marker.style.background=rmMsStatusColor(ms.status);
+        if(group.length>1){
+          const offset=(gi-(group.length-1)/2)*13;
+          marker.style.top=`calc(50% + ${offset}px)`;
+        }
+        marker.title=`${ms.name||'Milestone'} — ${fmtDate(ms.date)} — ${rmMsStatusLabel(ms.status)}`;
+        trackWrap.appendChild(marker);
+      });
     });
     row.append(nameCell,trackWrap);
     rowsWrap.appendChild(row);
