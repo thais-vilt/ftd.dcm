@@ -1865,7 +1865,7 @@ const CANONICAL_EPIC_ORDER=['epic_1784127331698','epic_1786469984445','epic_1784
    timelines, tabelas de velocidade/projeção) — continuam existindo e
    editáveis normalmente na aba Épicos, só não entram nas visões
    consolidadas do programa. */
-const INDICATOR_EXCLUDED_EPIC_IDS=['epic_1784127623673','epic_1786974880516']; /* Treinamentos, Incremento Funcional */
+const INDICATOR_EXCLUDED_EPIC_IDS=['epic_1784127623673','epic_1786974880516','epic_1788969047402','epic_1788969213013']; /* Treinamentos, Incremento Funcional, Prod. Editorial Embarque, Prod. Editorial Discoveries */
 function epicsInCanonicalOrder(){
   return [...EPICS]
     .filter(e=>!INDICATOR_EXCLUDED_EPIC_IDS.includes(e.id))
