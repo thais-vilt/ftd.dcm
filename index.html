@@ -739,10 +739,11 @@ main { padding:28px 36px 64px; max-width:1220px; margin:0 auto; }
 
 /* ══ PE TABLE ══ */
 .pe-kpis { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-.pe-selo-filter { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
-.pe-selo-filter label { font-size:12px; font-weight:600; color:var(--text2); }
-.pe-selo-filter select { padding:7px 12px; border-radius:var(--r-sm); border:1px solid var(--border2); font-family:var(--font); font-size:13px; color:var(--text); background:#fff; cursor:pointer; }
-.pe-selo-filter select:focus { outline:none; border-color:var(--brand); }
+.pe-filters { display:flex; align-items:center; gap:20px; margin-bottom:14px; flex-wrap:wrap; }
+.pe-filter { display:flex; align-items:center; gap:8px; }
+.pe-filter label { font-size:12px; font-weight:600; color:var(--text2); }
+.pe-filter select { padding:7px 12px; border-radius:var(--r-sm); border:1px solid var(--border2); font-family:var(--font); font-size:13px; color:var(--text); background:#fff; cursor:pointer; }
+.pe-filter select:focus { outline:none; border-color:var(--brand); }
 
 /* ═══ Backlog — tabela editável ═══ */
 .bkl-filters { display:flex; align-items:center; gap:20px; margin-bottom:14px; flex-wrap:wrap; }
@@ -1595,11 +1596,23 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
   <!-- PRODUÇÃO EDITORIAL -->
   <div id="view-pe" class="view">
     <div class="pe-kpis" id="pe-kpis"></div>
-    <div class="pe-selo-filter">
-      <label for="pe-selo-filter-sel">Filtrar por selo:</label>
-      <select id="pe-selo-filter-sel" onchange="setPeSeloFilter(this.value)">
-        <option value="">Todos os selos</option>
-      </select>
+    <div class="pe-filters">
+      <div class="pe-filter">
+        <label for="pe-selo-filter-sel">Filtrar por selo:</label>
+        <select id="pe-selo-filter-sel" onchange="setPeSeloFilter(this.value)">
+          <option value="">Todos os selos</option>
+        </select>
+      </div>
+      <div class="pe-filter">
+        <label for="pe-status-filter-sel">Filtrar por status:</label>
+        <select id="pe-status-filter-sel" onchange="setPeStatusFilter(this.value)">
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="em progresso">Em progresso</option>
+          <option value="concluído">Concluído</option>
+          <option value="bloqueado">Bloqueado</option>
+        </select>
+      </div>
     </div>
     <div class="pe-table-wrap">
       <table class="pe-table">
@@ -3298,6 +3311,10 @@ const peRowExp = {};
 /* filtro por selo — valor '' mostra todas as coleções; não é persistido,
    é apenas uma preferência de visualização da sessão atual. */
 let peSeloFilter = '';
+/* filtro por status — mesmo princípio do filtro por selo, só que com
+   opções fixas (o status é calculado por deriveStatus, não um campo
+   livre como o selo). */
+let peStatusFilter = '';
 /* ordem de exibição das coleções (arrastar-e-soltar), lista de col.n na
    ordem desejada — null/vazia usa a ordem natural (fixas depois
    customizadas). Persistida no código como as demais edições. */
@@ -3315,6 +3332,10 @@ function setPeSeloFilter(v) {
   peSeloFilter = v || '';
   buildPE();
 }
+function setPeStatusFilter(v) {
+  peStatusFilter = v || '';
+  buildPE();
+}
 function buildPE(){
   const _deleted=PE_COLS_DELETED;
   const _allCols=[...PE_COLS.filter(col=>!_deleted.includes(col.n)),...PE_COLS_STATE];
@@ -3325,6 +3346,8 @@ function buildPE(){
   _allCols.forEach((col,ei)=>{ if(!peState[ei]) peState[ei]=PE_TASKS_DEF.map(n=>({name:n,status:'pendente'})); });
   buildPeKpis();
   populatePeSeloFilter(_allCols);
+  const statusFilterSel=document.getElementById('pe-status-filter-sel');
+  if(statusFilterSel) statusFilterSel.value=peStatusFilter;
   const tbody=document.getElementById('pe-tbody');tbody.innerHTML='';
   /* ordem de exibição — aplica peOrder (arrastar-e-soltar) por cima da ordem
      natural (fixas seguidas de customizadas). Isso NÃO reordena _allCols
@@ -3344,7 +3367,8 @@ function buildPE(){
   displayOrder.forEach((ei,displayPos)=>{
     const col=_allCols[ei];
     if (peSeloFilter && col.selo !== peSeloFilter) return; /* fora do filtro por selo — não renderiza, mas preserva o índice ei para peState */
-    const isOpen = peRowExp[col.n] !== false; /* aberto por padrão */
+    if (peStatusFilter && deriveStatus(ei) !== peStatusFilter) return; /* fora do filtro por status */
+    const isOpen = peRowExp[col.n] === true; /* fechado por padrão — só abre se o usuário expandir explicitamente */
     /* determine if custom (user-added) collection */
     const isCustom = !!col.custom;
     const etr=document.createElement('tr');etr.className='pe-epic-row'+(isOpen?' open':'');
@@ -4515,7 +4539,7 @@ async function loadUserRole() {
 }
 /* ids de controles que NÃO mexem em dados (filtros, navegação) — continuam
    liberados mesmo em modo somente leitura. */
-const READ_ONLY_ALLOWED_IDS = ['pe-selo-filter-sel', 'bkl-filter-priority', 'bkl-filter-frente'];
+const READ_ONLY_ALLOWED_IDS = ['pe-selo-filter-sel', 'pe-status-filter-sel', 'bkl-filter-priority', 'bkl-filter-frente'];
 function applyReadOnlyMode() {
   const banner = document.getElementById('read-only-banner');
   if (currentUserRole === 'editor') { if (banner) banner.style.display = 'none'; return; }
