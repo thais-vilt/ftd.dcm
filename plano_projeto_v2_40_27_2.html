@@ -446,6 +446,7 @@ main { padding:28px 36px 64px; max-width:1220px; margin:0 auto; }
 .badge-green { background:var(--s-done-bg); color:var(--s-done-tx); }
 .badge-gray  { background:var(--s-pend-bg); color:var(--s-pend-tx); }
 .badge-red   { background:var(--s-blok-bg); color:var(--s-blok-tx); }
+.badge-amber { background:var(--amber-lt); color:var(--amber); }
 
 /* ══ STATUS EXECUTIVO ══ */
 /* header strip */
@@ -3127,7 +3128,7 @@ const EPIC_VEL_STATUS_META={
   concluido:        {label:'Concluído',            badge:'badge-green'},
   atrasado:         {label:'Atrasado',              badge:'badge-red'},
   no_ritmo:         {label:'No ritmo',               badge:'badge-blue'},
-  precisa_acelerar: {label:'Precisa acelerar',       badge:'badge-red'},
+  precisa_acelerar: {label:'Precisa acelerar',       badge:'badge-amber'},
   nao_iniciado:     {label:'Ainda não iniciado',     badge:'badge-gray'},
   sem_dados:        {label:'Sem datas suficientes',  badge:'badge-gray'},
 };
@@ -3139,14 +3140,22 @@ function buildVelocityRow(epic,i,actual){
   const fmtVel=x=>(x===undefined||x===null||isNaN(x))?'—':x.toFixed(1)+'%/sem';
   const fmtPct=x=>(x===undefined||x===null||isNaN(x))?'—':x+'%';
   const ratioPct=v.ratio!==undefined&&v.ratio!==null&&isFinite(v.ratio)?Math.round(v.ratio*100):null;
-  const barColor=v.status==='no_ritmo'||v.status==='concluido'?'#0F7250':v.status==='precisa_acelerar'||v.status==='atrasado'?'#FF5C6E':'#9BA3CC';
+  const barColor=v.status==='no_ritmo'||v.status==='concluido'?'#0F7250':v.status==='atrasado'?'#FF5C6E':v.status==='precisa_acelerar'?'#D97706':'#9BA3CC';
   /* acima de 100% (adiantado em relação ao ritmo necessário) o valor bruto
      pode disparar para números extremos (ex: 500%+) quando faltam poucas
      semanas para o prazo — exibimos "100%+" em vez do número exato, que
      não agrega informação além de "está no ritmo ou à frente". */
   const ratioLabel=ratioPct===null?'':(ratioPct>100?'100%+':ratioPct+'%');
   const ritmoCell=ratioPct===null?'—':`<div class="pbar-row"><div class="pbar" style="width:60px;"><div class="pbar-fill" style="width:${Math.min(ratioPct,100)}%;background:${barColor};"></div></div><span style="font-size:12px;font-weight:700;color:${barColor};">${ratioLabel}</span></div>`;
-  const projColor=v.projectedAtTarget===null||v.projectedAtTarget===undefined?'var(--text3)':(v.projectedAtTarget>=100?'#0F7250':v.projectedAtTarget>=70?'#D97706':'#FF5C6E');
+  /* projeção abaixo de 100% = não vai concluir a Fase II no ritmo atual até
+     a data-alvo — mostramos isso como um indicador "Em atraso" (igual ao
+     badge de status), não só um número colorido, para ficar visualmente
+     claro sem precisar interpretar a porcentagem. */
+  const projCell=(v.projectedAtTarget===null||v.projectedAtTarget===undefined)
+    ? `<span style="color:var(--text3);">—</span>`
+    : (v.projectedAtTarget<100
+        ? `<span class="badge badge-red">Em atraso</span>`
+        : `<span style="font-weight:700;color:#0F7250;">${fmtPct(v.projectedAtTarget)}</span>`);
   tr.innerHTML=`
     <td><div class="pe-epic-name"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${epic.id==='pe_producao_editorial'?PE_SUMMARY_COLOR:EC[i%EC.length]};margin-right:7px;"></span>${epic.name}</div></td>
     <td style="font-weight:700;color:var(--brand);">${actual}%</td>
@@ -3156,7 +3165,7 @@ function buildVelocityRow(epic,i,actual){
     <td>${fmtVel(v.requiredVel)}</td>
     <td>${ritmoCell}</td>
     <td><span class="badge ${meta.badge}">${meta.label}</span></td>
-    <td style="font-weight:700;color:${projColor};">${fmtPct(v.projectedAtTarget)}</td>`;
+    <td>${projCell}</td>`;
   /* comentário — input separado (não via innerHTML) para evitar problemas
      de escaping com aspas/acentos no texto digitado pelo usuário */
   const tdComment=document.createElement('td');
