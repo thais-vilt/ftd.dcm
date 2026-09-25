@@ -3955,6 +3955,7 @@ const RM_PILLARS_DEFAULT=[
   {id:'lic',   name:'Licenciamentos',                 color:'#7C3AED', start:'2026-03-01', end:'2026-09-25'},
   {id:'disc',  name:'Prod. Editorial – Discoveries',   color:'#7FB8F5', start:'2026-04-01', end:'2026-12-05'},
   {id:'emb',   name:'Prod. Editorial – Handoff Desenvolvimento', color:'#1449C7', start:'2026-07-20', end:'2027-02-20'},
+  {id:'emb2',  name:'Prod. Editorial – Embarques',     color:'#0F6E56', start:'2026-10-13', end:'2027-02-01'},
   {id:'dash',  name:'Dashboards',                      color:'#1AA6B8', start:'2026-10-01', end:'2026-12-01'},
   {id:'horas', name:'Envio de Horas',                  color:'#12A150', start:'2026-03-01', end:'2026-12-01'},
   {id:'migr',  name:'Migração Ativos/Vulcano',         color:'#DB8B0B', start:'2026-05-10', end:'2026-12-10'},
@@ -3962,7 +3963,7 @@ const RM_PILLARS_DEFAULT=[
 ];
 let RM_PILLARS=JSON.parse(JSON.stringify(RM_PILLARS_DEFAULT));
 /* garante a ordem fixa mesmo se dados salvos anteriormente estiverem em outra ordem */
-const RM_PILLAR_ORDER=['lic','disc','emb','dash','horas','migr','isa'];
+const RM_PILLAR_ORDER=['lic','disc','emb','emb2','dash','horas','migr','isa'];
 function sortRmPillars() {
   RM_PILLARS.sort((a,b)=>{
     const ia=RM_PILLAR_ORDER.indexOf(a.id), ib=RM_PILLAR_ORDER.indexOf(b.id);
@@ -3989,6 +3990,15 @@ const RM_MILESTONES_DEFAULT=[
   {name:'Embarque Literatura',                             date:'2027-01-11', color:'#1AA6B8', pillarId:'emb', status:'pendente'},
   {name:'Embarque Suplementares',                          date:'2027-01-11', color:'#E11761', pillarId:'emb', status:'pendente'},
   {name:'Embarque PNLD',                                   date:'2027-02-22', color:'#9BA3CC', pillarId:'emb', status:'pendente'},
+  {name:'Pré Embarque',                                    date:'2026-10-13', color:'#FF5C6E', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque FTD-SE',                                 date:'2026-11-02', color:'#7C3AED', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque SIM',                                    date:'2026-11-30', color:'#1449C7', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque Bilinguismo',                            date:'2026-11-30', color:'#12A150', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque Didáticos',                              date:'2026-12-14', color:'#DB8B0B', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque SME',                                    date:'2027-02-01', color:'#1AA6B8', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque Literatura',                             date:'2027-02-01', color:'#E11761', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque Suplementares',                          date:'2027-02-01', color:'#9BA3CC', pillarId:'emb2', status:'pendente'},
+  {name:'Embarque PNLD',                                   date:'',           color:'#F5C518', pillarId:'emb2', status:'pendente'},
   {name:'Implementação Licenciamentos',                    date:'2026-09-04', color:'#FF5C6E', pillarId:'lic', status:'em andamento'},
   {name:'UAT Licenciamentos',                              date:'2026-09-18', color:'#7C3AED', pillarId:'lic', status:'em andamento'},
   {name:'Entrega Licenciamentos',                          date:'2026-10-02', color:'#1449C7', pillarId:'lic', status:'em andamento'},
@@ -4517,8 +4527,16 @@ function bootApp() {
   /* não há tela para renomear pilares, então o título vem sempre do código —
      assim renomeações feitas aqui valem também para dados já salvos. */
   RM_PILLARS.forEach(p=>{ const d=RM_PILLARS_DEFAULT.find(x=>x.id===p.id); if(d) p.name=d.name; });
+  /* lanes novas do código que ainda não existem nos dados salvos entram
+     automaticamente (só em memória; gravam junto no próximo salvamento). */
+  RM_PILLARS_DEFAULT.forEach(d=>{ if(!RM_PILLARS.some(p=>p.id===d.id)) RM_PILLARS.push(JSON.parse(JSON.stringify(d))); });
   sortRmPillars();
   RM_MILESTONES = ST.get('roadmap_milestones', null) || JSON.parse(JSON.stringify(RM_MILESTONES_DEFAULT));
+  /* marcos da lane "Embarques" (emb2): se os dados salvos ainda não têm
+     nenhum, entram os do código (só em memória; gravam no próximo salvamento). */
+  if(!RM_MILESTONES.some(ms=>ms.pillarId==='emb2')){
+    RM_MILESTONES.push(...JSON.parse(JSON.stringify(RM_MILESTONES_DEFAULT.filter(ms=>ms.pillarId==='emb2'))));
+  }
   RM_OBJ_PILLARS = ST.get('roadmap_obj_pillars', null) || JSON.parse(JSON.stringify(RM_OBJ_PILLARS_DEFAULT));
   backlogRows = ST.get('backlog_rows', null) || JSON.parse(JSON.stringify(BACKLOG_DEFAULT));
   peStatusOverride = ST.get('pe_status_override', null);
