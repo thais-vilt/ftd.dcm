@@ -4034,6 +4034,8 @@ function rmPct(frac){ return (frac*100).toFixed(3)+'%'; }
 function saveRmPillars(){ ST.set('roadmap_pillars',RM_PILLARS); buildRoadmapChart(); }
 function saveRmMilestones(){ ST.set('roadmap_milestones',RM_MILESTONES); buildRoadmapChart(); }
 
+/* pilares que espelham um épico da aba Épicos quando não têm período próprio */
+const RM_PILLAR_EPIC={ isa:{epicId:'epic_1784120498364', color:'#E11761'} };
 function buildRoadmapChart(){
   const body=document.getElementById('rm-gantt-body');
   if(!body) return;
@@ -4053,11 +4055,21 @@ function buildRoadmapChart(){
     const trackWrap=document.createElement('div'); trackWrap.className='rm-gantt-track-wrap';
     const track=document.createElement('div'); track.className='rm-gantt-track';
     trackWrap.appendChild(track);
-    const sf=rmDateFrac(p.start), ef=rmDateFrac(p.end);
+    /* período da barra: usa o do próprio pilar; se estiver vazio e o pilar
+       espelha um épico (RM_PILLAR_EPIC), deriva início/fim das datas das
+       tarefas desse épico — assim a barra acompanha a aba Épicos sozinha. */
+    let pStart=p.start, pEnd=p.end, pColor=p.color;
+    const mirror=RM_PILLAR_EPIC[p.id];
+    if(mirror && (!pStart||!pEnd)){
+      const ep=EPICS.find(e=>e.id===mirror.epicId);
+      if(ep){ const dr=epicDateRange(ep); pStart=pStart||dr.s; pEnd=pEnd||dr.e; }
+      pColor=pColor||mirror.color;
+    }
+    const sf=rmDateFrac(pStart), ef=rmDateFrac(pEnd);
     if(sf!==null && ef!==null && ef>=sf){
       const bar=document.createElement('div'); bar.className='rm-gantt-bar';
-      bar.style.left=rmPct(sf); bar.style.width=rmPct(Math.max(ef-sf,0.01)); bar.style.background=p.color||'var(--brand)';
-      bar.title=`${p.name}: ${fmtDate(p.start)} – ${fmtDate(p.end)}`;
+      bar.style.left=rmPct(sf); bar.style.width=rmPct(Math.max(ef-sf,0.01)); bar.style.background=pColor||'var(--brand)';
+      bar.title=`${p.name}: ${fmtDate(pStart)} – ${fmtDate(pEnd)}`;
       trackWrap.appendChild(bar);
     } else if(!RM_MILESTONES.some(ms=>ms.pillarId===p.id && rmDateFrac(ms.date)!==null)){
       /* só mostra "datas a definir" se a lane não tem barra E também não tem
