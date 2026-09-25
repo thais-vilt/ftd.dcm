@@ -839,13 +839,16 @@ main { padding:28px 36px 64px; max-width:1220px; margin:0 auto; }
 .rm-gantt-card { background:#fff; border:1px solid var(--border); border-radius:var(--r); padding:22px 26px; margin-bottom:20px; box-shadow:0 1px 4px rgba(27,63,160,0.05); }
 .rm-gantt-title { font-size:19px; font-weight:800; color:var(--text); letter-spacing:-0.01em; margin-bottom:4px; }
 .rm-gantt-sub { font-size:13px; color:var(--text3); margin-bottom:20px; }
-.rm-gantt-body { position:relative; border:1px solid var(--border); border-radius:var(--r-sm); overflow:visible; padding-top:26px; }
-.rm-gantt-head { display:grid; grid-template-columns:180px repeat(var(--rmcols,13), 1fr); padding:0 16px; }
-.rm-gantt-head-cell { font-size:11px; font-weight:700; color:var(--text3); text-align:center; padding-bottom:10px; text-transform:uppercase; letter-spacing:.03em; }
-.rm-gantt-rows { padding:6px 16px 16px; }
-.rm-gantt-row { display:grid; grid-template-columns:180px 1fr; align-items:center; min-height:40px; }
-.rm-gantt-row-name { font-size:13px; font-weight:700; color:var(--text); padding-right:10px; }
-.rm-gantt-track-wrap { position:relative; height:22px; }
+.rm-gantt-body { --rm-name:210px; position:relative; border:1px solid var(--border); border-radius:var(--r-sm); overflow:visible; padding-top:30px; }
+.rm-gantt-head { display:grid; grid-template-columns:var(--rm-name) repeat(var(--rmcols,13), 1fr); padding:0 16px; }
+.rm-gantt-head-cell { font-size:11px; font-weight:700; color:var(--text3); text-align:center; padding-bottom:14px; text-transform:uppercase; letter-spacing:.03em; }
+.rm-gantt-rows { padding:4px 16px 12px; }
+/* espaçamento vertical de cada lane (--rm-pad) é ajustado por JS conforme
+   quantos marcos empilham na mesma data; linha sutil separa as lanes */
+.rm-gantt-row { display:grid; grid-template-columns:var(--rm-name) 1fr; align-items:center; padding:var(--rm-pad,14px) 0; border-bottom:1px solid rgba(200,206,238,.45); }
+.rm-gantt-row:last-child { border-bottom:none; }
+.rm-gantt-row-name { font-size:13px; font-weight:700; color:var(--text); padding-right:18px; line-height:1.4; }
+.rm-gantt-track-wrap { position:relative; height:26px; }
 .rm-gantt-track { position:absolute; inset:0; background:var(--surface2); border-radius:99px; }
 .rm-gantt-bar { position:absolute; top:0; bottom:0; border-radius:99px; transition:left .2s,width .2s; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
 .rm-gantt-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-style:italic; color:var(--text3); }
@@ -4110,6 +4113,11 @@ function buildRoadmapChart(){
         trackWrap.appendChild(marker);
       });
     });
+    /* lanes com marcos empilhados na mesma data ganham mais respiro vertical
+       para os losangos não encostarem nas lanes vizinhas */
+    const maxStack=Math.max(1,...Object.values(msByDate).map(g=>g.length));
+    const stackExtent=(maxStack-1)/2*13+11;
+    row.style.setProperty('--rm-pad',Math.max(14,Math.ceil(stackExtent-7))+'px');
     row.append(nameCell,trackWrap);
     rowsWrap.appendChild(row);
   });
@@ -4121,9 +4129,10 @@ function buildRoadmapChart(){
   const todayFrac=rmDateFrac(todayISO);
   if(todayFrac!==null){
     const line=document.createElement('div'); line.className='rm-gantt-today';
-    line.style.left=`calc(180px + (100% - 180px) * ${todayFrac})`;
+    const todayLeft=`calc(16px + var(--rm-name) + (100% - 32px - var(--rm-name)) * ${todayFrac})`;
+    line.style.left=todayLeft;
     const lbl=document.createElement('div'); lbl.className='rm-gantt-today-lbl'; lbl.textContent='HOJE';
-    lbl.style.left=`calc(180px + (100% - 180px) * ${todayFrac})`;
+    lbl.style.left=todayLeft;
     body.appendChild(line); body.appendChild(lbl);
   }
 
@@ -4131,7 +4140,7 @@ function buildRoadmapChart(){
   RM_MILESTONES.filter(ms=>!ms.pillarId || !RM_PILLARS.some(p=>p.id===ms.pillarId)).forEach((ms,mi)=>{
     const f=rmDateFrac(ms.date);
     if(f===null) return;
-    const left=`calc(180px + (100% - 180px) * ${f})`;
+    const left=`calc(16px + var(--rm-name) + (100% - 32px - var(--rm-name)) * ${f})`;
     const msColor=rmMsStatusColor(ms.status);
     const line=document.createElement('div'); line.className='rm-gantt-milestone-line';
     line.style.left=left; line.style.borderColor=msColor;
