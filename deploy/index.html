@@ -1656,6 +1656,14 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
     <div class="rm-mstone-card">
       <div class="rm-mstone-title">Milestones</div>
       <div class="rm-mstone-sub">Adicione um marco importante com nome, data, lane (pilar) e status — ele aparece automaticamente como marcador na lane certa do roadmap acima, com a cor do marcador definida pelo status (atualiza sozinha ao trocar o status). Selecione "Geral" para um marco que não pertence a um pilar específico.</div>
+      <div class="pe-filters">
+        <div class="pe-filter">
+          <label for="rm-mstone-filter-sel">Filtrar por lane:</label>
+          <select id="rm-mstone-filter-sel" onchange="setRmMstoneFilter(this.value)">
+            <option value="">Todas as lanes</option>
+          </select>
+        </div>
+      </div>
       <div class="rm-mstone-table" id="rm-mstone-table"></div>
       <button class="btn-add-mstone" onclick="addRmMilestone()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
@@ -4152,17 +4160,33 @@ function buildRoadmapChart(){
 }
 
 let draggedMstoneRow=null;
+/* filtro por lane na lista de milestones — '' = todas, 'geral' = sem lane
+   específica, ou o id de um pilar. Só de visualização (não é persistido). */
+let rmMstoneLaneFilter='';
+function setRmMstoneFilter(v){ rmMstoneLaneFilter=v||''; buildRmMilestoneTable(); }
+function rmMstoneLaneOf(ms){ return (ms.pillarId && RM_PILLARS.some(p=>p.id===ms.pillarId)) ? ms.pillarId : 'geral'; }
 function buildRmMilestoneTable(){
   const wrap=document.getElementById('rm-mstone-table');
   if(!wrap) return;
   wrap.innerHTML='';
+  const filterSel=document.getElementById('rm-mstone-filter-sel');
+  if(filterSel){
+    if(rmMstoneLaneFilter && rmMstoneLaneFilter!=='geral' && !RM_PILLARS.some(p=>p.id===rmMstoneLaneFilter)) rmMstoneLaneFilter='';
+    filterSel.innerHTML='<option value="">Todas as lanes</option>'+RM_PILLARS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="geral">Geral (todas as lanes)</option>';
+    filterSel.value=rmMstoneLaneFilter;
+  }
   if(!RM_MILESTONES.length){
     const empty=document.createElement('div'); empty.style.cssText='font-size:12px;color:var(--text3);font-style:italic;padding:6px 2px;';
     empty.textContent='Nenhum milestone cadastrado ainda.';
     wrap.appendChild(empty);
+  } else if(rmMstoneLaneFilter && !RM_MILESTONES.some(ms=>rmMstoneLaneOf(ms)===rmMstoneLaneFilter)){
+    const empty=document.createElement('div'); empty.style.cssText='font-size:12px;color:var(--text3);font-style:italic;padding:6px 2px;';
+    empty.textContent='Nenhum milestone nesta lane.';
+    wrap.appendChild(empty);
   }
   RM_MILESTONES.forEach((ms,mi)=>{
-    const row=document.createElement('div'); row.className='rm-mstone-row';
+    if(rmMstoneLaneFilter && rmMstoneLaneOf(ms)!==rmMstoneLaneFilter) return; /* mi continua sendo o índice real em RM_MILESTONES */
+    const row=document.createElement('div'); row.className='rm-mstone-row'; row.dataset.mi=mi;
 
     /* arrastar para reordenar — a ordem é salva junto com o restante dos
        dados do milestone (ST.set via saveRmMilestones), não só localmente */
@@ -4193,9 +4217,11 @@ function buildRmMilestoneTable(){
       e.preventDefault();
       row.classList.remove('drag-over');
       if(!draggedMstoneRow || draggedMstoneRow===row) return;
-      const fromIdx=Array.from(wrap.children).indexOf(draggedMstoneRow);
-      const toIdx=Array.from(wrap.children).indexOf(row);
-      if(fromIdx<0||toIdx<0) return;
+      /* índices reais em RM_MILESTONES (data-mi), não a posição na tela —
+         com o filtro por lane ativo as linhas visíveis são só um subconjunto */
+      const fromIdx=Number(draggedMstoneRow.dataset.mi);
+      const toIdx=Number(row.dataset.mi);
+      if(isNaN(fromIdx)||isNaN(toIdx)) return;
       const [moved]=RM_MILESTONES.splice(fromIdx,1);
       RM_MILESTONES.splice(toIdx,0,moved);
       saveRmMilestones();
@@ -4237,7 +4263,9 @@ function buildRmMilestoneTable(){
 function addRmMilestone(){
   const now=new Date();
   const iso=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  RM_MILESTONES.push({name:'Novo milestone',date:iso,pillarId:'geral',status:'pendente'});
+  /* com uma lane filtrada, o novo marco já nasce nela (senão ficaria oculto) */
+  const newLane=(rmMstoneLaneFilter && rmMstoneLaneFilter!=='geral')?rmMstoneLaneFilter:'geral';
+  RM_MILESTONES.push({name:'Novo milestone',date:iso,pillarId:newLane,status:'pendente'});
   ST.set('roadmap_milestones',RM_MILESTONES);
   buildRmMilestoneTable();
   buildRoadmapChart();
@@ -4585,7 +4613,7 @@ async function loadUserRole() {
 }
 /* ids de controles que NÃO mexem em dados (filtros, navegação) — continuam
    liberados mesmo em modo somente leitura. */
-const READ_ONLY_ALLOWED_IDS = ['pe-selo-filter-sel', 'pe-status-filter-sel', 'bkl-filter-priority', 'bkl-filter-frente'];
+const READ_ONLY_ALLOWED_IDS = ['pe-selo-filter-sel', 'pe-status-filter-sel', 'rm-mstone-filter-sel', 'bkl-filter-priority', 'bkl-filter-frente'];
 function applyReadOnlyMode() {
   const banner = document.getElementById('read-only-banner');
   if (currentUserRole === 'editor') { if (banner) banner.style.display = 'none'; return; }
