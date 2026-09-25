@@ -3954,7 +3954,7 @@ const RM_TOTAL=RM_MONTHS.length;
 const RM_PILLARS_DEFAULT=[
   {id:'lic',   name:'Licenciamentos',                 color:'#7C3AED', start:'2026-03-01', end:'2026-09-25'},
   {id:'disc',  name:'Prod. Editorial – Discoveries',   color:'#7FB8F5', start:'2026-04-01', end:'2026-12-05'},
-  {id:'emb',   name:'Prod. Editorial – Embarque',      color:'#1449C7', start:'2026-07-20', end:'2027-02-20'},
+  {id:'emb',   name:'Prod. Editorial – Handoff Desenvolvimento', color:'#1449C7', start:'2026-07-20', end:'2027-02-20'},
   {id:'dash',  name:'Dashboards',                      color:'#1AA6B8', start:'2026-10-01', end:'2026-12-01'},
   {id:'horas', name:'Envio de Horas',                  color:'#12A150', start:'2026-03-01', end:'2026-12-01'},
   {id:'migr',  name:'Migração Ativos/Vulcano',         color:'#DB8B0B', start:'2026-05-10', end:'2026-12-10'},
@@ -4514,6 +4514,9 @@ function bootApp() {
   peOrder = ST.get('pe_collection_order', null);
   applyPeOverrides();
   RM_PILLARS = ST.get('roadmap_pillars', null) || JSON.parse(JSON.stringify(RM_PILLARS_DEFAULT));
+  /* não há tela para renomear pilares, então o título vem sempre do código —
+     assim renomeações feitas aqui valem também para dados já salvos. */
+  RM_PILLARS.forEach(p=>{ const d=RM_PILLARS_DEFAULT.find(x=>x.id===p.id); if(d) p.name=d.name; });
   sortRmPillars();
   RM_MILESTONES = ST.get('roadmap_milestones', null) || JSON.parse(JSON.stringify(RM_MILESTONES_DEFAULT));
   RM_OBJ_PILLARS = ST.get('roadmap_obj_pillars', null) || JSON.parse(JSON.stringify(RM_OBJ_PILLARS_DEFAULT));
