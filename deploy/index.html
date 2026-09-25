@@ -4059,7 +4059,10 @@ function buildRoadmapChart(){
       bar.style.left=rmPct(sf); bar.style.width=rmPct(Math.max(ef-sf,0.01)); bar.style.background=p.color||'var(--brand)';
       bar.title=`${p.name}: ${fmtDate(p.start)} – ${fmtDate(p.end)}`;
       trackWrap.appendChild(bar);
-    } else {
+    } else if(!RM_MILESTONES.some(ms=>ms.pillarId===p.id && rmDateFrac(ms.date)!==null)){
+      /* só mostra "datas a definir" se a lane não tem barra E também não tem
+         nenhum milestone datado — se já há marcos com data, a lane não está
+         "sem datas", só não tem um período de barra definido. */
       const empty=document.createElement('div'); empty.className='rm-gantt-empty'; empty.textContent='Em planejamento – datas a definir';
       trackWrap.appendChild(empty);
     }
