@@ -1440,14 +1440,14 @@ footer { text-align:center; padding:22px 36px; font-size:11px; color:var(--text3
 
     <!-- ── Produção Editorial — logo abaixo da linha de KPIs gerais ── -->
     <div class="dash-card" style="margin-bottom:16px;">
-      <div class="dash-card-title" style="margin-bottom:16px;">Produção Editorial — status das coleções</div>
+      <div class="dash-card-title" style="margin-bottom:16px;">Produção Editorial — status das produções</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr) 2fr;gap:12px;margin-bottom:16px;">
-        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Pendente</div><div class="sum-value" id="dpe-pend">53</div><div class="sum-sub" id="dpe-pend-p">100% das coleções</div></div>
-        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Em progresso</div><div class="sum-value" id="dpe-prog" style="color:var(--brand);">0</div><div class="sum-sub" id="dpe-prog-p">0% das coleções</div></div>
-        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Concluído</div><div class="sum-value" id="dpe-done" style="color:var(--teal);">0</div><div class="sum-sub" id="dpe-done-p">0% das coleções</div></div>
-        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Bloqueado</div><div class="sum-value" id="dpe-blk" style="color:var(--coral);">0</div><div class="sum-sub" id="dpe-blk-p">0% das coleções</div></div>
+        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Pendente</div><div class="sum-value" id="dpe-pend">53</div><div class="sum-sub" id="dpe-pend-p">100% das produções</div></div>
+        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Em progresso</div><div class="sum-value" id="dpe-prog" style="color:var(--brand);">0</div><div class="sum-sub" id="dpe-prog-p">0% das produções</div></div>
+        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Concluído</div><div class="sum-value" id="dpe-done" style="color:var(--teal);">0</div><div class="sum-sub" id="dpe-done-p">0% das produções</div></div>
+        <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;"><div class="sum-label">Bloqueado</div><div class="sum-value" id="dpe-blk" style="color:var(--coral);">0</div><div class="sum-sub" id="dpe-blk-p">0% das produções</div></div>
         <div class="sum-card" style="border:none;background:var(--surface2);padding:14px 16px;">
-          <div class="sum-label" style="margin-bottom:10px;" id="dpe-total-lbl">Distribuição — 53 coleções</div>
+          <div class="sum-label" style="margin-bottom:10px;" id="dpe-total-lbl">Distribuição — 53 produções</div>
           <div style="width:100%;height:9px;border-radius:99px;overflow:hidden;background:var(--border);display:flex;gap:2px;margin-bottom:7px;">
             <div id="dpe-bar-done" style="flex:0;background:var(--teal);border-radius:99px;transition:flex .4s;"></div>
             <div id="dpe-bar-prog" style="flex:0;background:var(--brand);border-radius:99px;transition:flex .4s;"></div>
@@ -2960,7 +2960,7 @@ function refreshDashboardMetrics(){
   });
   if(peSum){
     const r=document.createElement('div');r.className='epl-row';
-    r.innerHTML=`<div class="epl-header"><div class="epl-name"><span class="epl-dot" style="background:${PE_SUMMARY_COLOR};"></span>${PE_SUMMARY_NAME}</div><div style="display:flex;align-items:center;gap:14px;"><span class="epl-meta">${peSum.doneCt}/${peSum.total} coleções concluídas</span><span class="epl-pct">${peSum.pct}%</span></div></div><div class="epl-track"><div class="epl-fill" style="width:${peSum.pct}%;background:${PE_SUMMARY_COLOR};"></div></div>`;
+    r.innerHTML=`<div class="epl-header"><div class="epl-name"><span class="epl-dot" style="background:${PE_SUMMARY_COLOR};"></span>${PE_SUMMARY_NAME}</div><div style="display:flex;align-items:center;gap:14px;"><span class="epl-meta">${peSum.doneCt}/${peSum.total} produções concluídas</span><span class="epl-pct">${peSum.pct}%</span></div></div><div class="epl-track"><div class="epl-fill" style="width:${peSum.pct}%;background:${PE_SUMMARY_COLOR};"></div></div>`;
     list.appendChild(r);
   }
   /* mini gantt */
@@ -3261,11 +3261,11 @@ function buildPeKpis(){
       <span><span style="font-weight:700;">${pct(pend)}</span> pendente</span>
     </div></div></div>`;
   const se=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  se('dpe-total-lbl',`Distribuição — ${tot} coleções`);
-  se('dpe-pend',pend);se('dpe-pend-p',pct(pend)+' das coleções');
-  se('dpe-prog',prog);se('dpe-prog-p',pct(prog)+' das coleções');
-  se('dpe-done',done);se('dpe-done-p',pct(done)+' das coleções');
-  se('dpe-blk',blk);se('dpe-blk-p',pct(blk)+' das coleções');
+  se('dpe-total-lbl',`Distribuição — ${tot} produções`);
+  se('dpe-pend',pend);se('dpe-pend-p',pct(pend)+' das produções');
+  se('dpe-prog',prog);se('dpe-prog-p',pct(prog)+' das produções');
+  se('dpe-done',done);se('dpe-done-p',pct(done)+' das produções');
+  se('dpe-blk',blk);se('dpe-blk-p',pct(blk)+' das produções');
   se('dpe-pct-done',pct(done));se('dpe-pct-prog',pct(prog));se('dpe-pct-blk',pct(blk));se('dpe-pct-pend',pct(pend));
   const sf=(id,v)=>{const e=document.getElementById(id);if(e){e.style.flex=v;e.style.minWidth=v>0?'2px':'0';}};
   sf('dpe-bar-done',done);sf('dpe-bar-prog',prog);sf('dpe-bar-blk',blk);sf('dpe-bar-pend',pend||0.001);
