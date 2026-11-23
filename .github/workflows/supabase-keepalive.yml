@@ -1,0 +1,64 @@
+name: Supabase keep-alive
+
+# Faz consultas leves (somente leitura) no Supabase do dashboard FTD para
+# registrar atividade e evitar que o projeto seja pausado por inatividade.
+# A chave usada e a anon publica, a mesma que ja esta em deploy/index.html.
+
+on:
+  schedule:
+    - cron: '0 13 * * 1,4'   # segunda e quinta, 10h (horario de Brasilia)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  SUPABASE_URL: https://famgcarcygejxdwlbcam.supabase.co
+  SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWdjYXJjeWdlanhkd2xiY2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NTYyMzcsImV4cCI6MjEwMzIzMjIzN30.9q4M0mz9sm3pYTgT4iWVGn57wXW3_a-oeMP4Ohh2ZHY
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar Supabase
+        run: |
+          fail=0
+          for round in 1 2 3; do
+            for ep in \
+              "/rest/v1/kv_store?select=key&limit=1" \
+              "/rest/v1/user_roles?select=role&limit=1" \
+              "/auth/v1/health"; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" \
+                -H "apikey: $SUPABASE_ANON_KEY" \
+                -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+                "$SUPABASE_URL$ep")
+              echo "$code $ep"
+              [ "$code" = "200" ] || fail=1
+            done
+            sleep 2
+          done
+          exit $fail
+
+  # O GitHub desativa agendamentos em repositorios publicos apos 60 dias sem
+  # commits. Se o ultimo commit tiver mais de 45 dias, registra um commit
+  # pequeno para manter o agendamento ativo.
+  manter-agendamento:
+    runs-on: ubuntu-latest
+    needs: ping
+    steps:
+      - uses: actions/checkout@v4
+      - name: Commit de manutencao se o repositorio estiver parado
+        run: |
+          last=$(git log -1 --format=%ct)
+          age_days=$(( ( $(date +%s) - last ) / 86400 ))
+          echo "Ultimo commit ha $age_days dias"
+          if [ "$age_days" -ge 45 ]; then
+            mkdir -p .github
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive-last-run
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive-last-run
+            git commit -m "chore: keep-alive do agendamento [skip ci]"
+            git push
+          fi
