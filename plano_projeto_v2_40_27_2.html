@@ -3958,7 +3958,7 @@ const RM_PILLARS_DEFAULT=[
   {id:'emb2',  name:'Prod. Editorial – Embarques',     color:'#0F6E56', start:'2026-10-13', end:'2027-02-01'},
   {id:'dash',  name:'Dashboards',                      color:'#1AA6B8', start:'2026-10-01', end:'2026-12-01'},
   {id:'horas', name:'Envio de Horas',                  color:'#12A150', start:'2026-03-01', end:'2026-12-01'},
-  {id:'migr',  name:'Migração Ativos/Vulcano',         color:'#DB8B0B', start:'2026-05-10', end:'2026-12-10'},
+  {id:'migr',  name:'Migração Ativos',                 color:'#DB8B0B', start:'2026-05-10', end:'2026-12-10'},
   {id:'isa',   name:'ISA',                             color:null,      start:null,         end:null},
 ];
 let RM_PILLARS=JSON.parse(JSON.stringify(RM_PILLARS_DEFAULT));
@@ -4226,7 +4226,7 @@ function buildRoadmapTab(){
 /* ═══ Modelo de Colaboração — Objetivos (bloco editável) ═══ */
 const RM_OBJ_CONTRACT_DEFAULT="Contratado sob o modelo Time & Materials, o time VILT atualmente trabalha com escopo definido para sete dos oito pilares, com exceção de ISA, ainda em discussão. Os objetivos estão pré-determinados junto ao time de negócios e devem ser cumpridos até março de 2027, final da fase atual de implementação.";
 const RM_OBJ_GENERAL_DEFAULT='Objetivos Gerais – Fase II: transformação dos processos de produção editorial, centralização, otimização e transparência das operações envolvidas.';
-const RM_OBJ_PILLARS_DEFAULT=[{"name":"Licenciamentos","text":"Transferir toda a experiência da área de Licenciamentos do Vulcano para o WF. "},{"name":"Prod. Editorial","text":"Implementação de templates para 84 coleções em diferentes formatos (30% do portfólio total FTD). Priorização a ser constantemente alinhada junto ao time de negócios FTD."},{"name":"Dashboards","text":"Implementação de oito painéis de controle e relatórios exportáveis para gestão de diferentes departamentos da FTD."},{"name":"Envio de Horas","text":"Migração de toda a experiência de usuário, de produções embarcadas, para soluções do ambiente Workfront. Desligamento do Timesheet previsto para fases futuras."},{"name":"Migração Ativos/Vulcano","text":"Migração de 100% do legado de coleções de 2024 e 2025 dos repositórios SharePoint e VPN e Digitais Vulcano."},{"name":"ISA","text":"Documentação com plano de implementação e escopo técnico dedicado à incorporação dos processos de cadastro de produtos editoriais e planejamento para transformação do blueprint de desenvolvimento com a substituição do ISA pelas soluções Adobe. "}];
+const RM_OBJ_PILLARS_DEFAULT=[{"name":"Licenciamentos","text":"Transferir toda a experiência da área de Licenciamentos do Vulcano para o WF. "},{"name":"Prod. Editorial","text":"Implementação de templates para 84 coleções em diferentes formatos (30% do portfólio total FTD). Priorização a ser constantemente alinhada junto ao time de negócios FTD."},{"name":"Dashboards","text":"Implementação de oito painéis de controle e relatórios exportáveis para gestão de diferentes departamentos da FTD."},{"name":"Envio de Horas","text":"Migração de toda a experiência de usuário, de produções embarcadas, para soluções do ambiente Workfront. Desligamento do Timesheet previsto para fases futuras."},{"name":"Migração Ativos","text":"Migração de 100% do legado de coleções de 2024 e 2025 dos repositórios SharePoint e VPN e Digitais Vulcano."},{"name":"ISA","text":"Documentação com plano de implementação e escopo técnico dedicado à incorporação dos processos de cadastro de produtos editoriais e planejamento para transformação do blueprint de desenvolvimento com a substituição do ISA pelas soluções Adobe. "}];
 let RM_OBJ_PILLARS=JSON.parse(JSON.stringify(RM_OBJ_PILLARS_DEFAULT));
 
 function buildRmObjPillars(){
@@ -4514,6 +4514,9 @@ function bootApp() {
     RM_MILESTONES.push(...JSON.parse(JSON.stringify(RM_MILESTONES_DEFAULT.filter(ms=>ms.pillarId==='emb2'))));
   }
   RM_OBJ_PILLARS = ST.get('roadmap_obj_pillars', null) || JSON.parse(JSON.stringify(RM_OBJ_PILLARS_DEFAULT));
+  /* nomes dos pilares de objetivo também não são editáveis na tela — aplica
+     renomeações do código aos dados já salvos. */
+  RM_OBJ_PILLARS.forEach(p=>{ if(p.name==='Migração Ativos/Vulcano') p.name='Migração Ativos'; });
   backlogRows = ST.get('backlog_rows', null) || JSON.parse(JSON.stringify(BACKLOG_DEFAULT));
   peStatusOverride = ST.get('pe_status_override', null);
 
