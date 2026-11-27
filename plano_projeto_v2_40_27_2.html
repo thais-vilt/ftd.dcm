@@ -3953,14 +3953,14 @@ const RM_MONTHS=['Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26',
 const RM_TOTAL=RM_MONTHS.length;
 const RM_PILLARS_DEFAULT=[
   {id:'lic',   name:'Licenciamentos Escopo Funcional', color:'#7C3AED', start:'2026-03-01', end:'2026-09-25'},
-  {id:'lic2',  name:'Licenciamentos ajustes para embarque', color:'#A78BFA', start:null, end:null},
+  {id:'lic2',  name:'Licenciamentos ajustes para embarque', color:'#A78BFA', start:'2026-09-26', end:'2027-02-19'},
   {id:'disc',  name:'Prod. Editorial – Discoveries',   color:'#7FB8F5', start:'2026-04-01', end:'2026-12-05'},
   {id:'emb',   name:'Prod. Editorial – Handoff Desenvolvimento', color:'#1449C7', start:'2026-07-20', end:'2027-02-20'},
   {id:'emb2',  name:'Prod. Editorial – Embarques',     color:'#0F6E56', start:'2026-10-13', end:'2027-02-01'},
   {id:'dash',  name:'Dashboards',                      color:'#1AA6B8', start:'2026-10-01', end:'2026-12-01'},
   {id:'horas', name:'Envio de Horas',                  color:'#12A150', start:'2026-03-01', end:'2026-12-01'},
   {id:'migr',  name:'Migração Ativos',                 color:'#DB8B0B', start:'2026-05-10', end:'2026-12-10'},
-  {id:'isa',   name:'ISA',                             color:null,      start:null,         end:null},
+  {id:'isa',   name:'ISA',                             color:'#E11761', start:'2026-04-06', end:'2027-02-19'},
 ];
 let RM_PILLARS=JSON.parse(JSON.stringify(RM_PILLARS_DEFAULT));
 /* garante a ordem fixa mesmo se dados salvos anteriormente estiverem em outra ordem */
@@ -4504,6 +4504,9 @@ function bootApp() {
   /* não há tela para renomear pilares, então o título vem sempre do código —
      assim renomeações feitas aqui valem também para dados já salvos. */
   RM_PILLARS.forEach(p=>{ const d=RM_PILLARS_DEFAULT.find(x=>x.id===p.id); if(d) p.name=d.name; });
+  /* período e cor da barra também não são editáveis na tela — quando os dados
+     salvos não têm esses valores, usa os do código (ex.: ISA). */
+  RM_PILLARS.forEach(p=>{ const d=RM_PILLARS_DEFAULT.find(x=>x.id===p.id); if(!d) return; if(!p.start) p.start=d.start; if(!p.end) p.end=d.end; if(!p.color) p.color=d.color; });
   /* lanes novas do código que ainda não existem nos dados salvos entram
      automaticamente (só em memória; gravam junto no próximo salvamento). */
   RM_PILLARS_DEFAULT.forEach(d=>{ if(!RM_PILLARS.some(p=>p.id===d.id)) RM_PILLARS.push(JSON.parse(JSON.stringify(d))); });
